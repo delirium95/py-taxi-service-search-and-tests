@@ -22,7 +22,8 @@ class AdminSiteTests(TestCase):
 
     def test_driver_listed(self):
         """
-        Test get driver's license number is in list_display on driver admin page.
+        Test get driver's license number is
+        in list_display on driver admin page.
         :return:
         """
         url = reverse("admin:taxi_driver_changelist")
@@ -82,8 +83,10 @@ class PrivateViewsTests(TestCase):
             "last_name": "Test llast",
             "license_number": "ABB99999"
         }
-        self.client.post(reverse("taxi:driver-create"), data=form_data)
-        new_user = get_user_model().objects.get(license_number=form_data["license_number"])
+        self.client.post(
+            reverse("taxi:driver-create"), data=form_data)
+        new_user = (get_user_model()
+                    .objects.get(license_number=form_data["license_number"]))
 
         self.assertEqual(new_user.first_name, form_data["first_name"])
         self.assertEqual(new_user.license_number, form_data["license_number"])
