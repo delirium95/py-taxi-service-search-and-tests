@@ -3,6 +3,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 
 from taxi.forms import DriverCreationForm, DriverSearchForm
+from taxi.models import Car, Manufacturer
 
 
 class AdminSiteTests(TestCase):
@@ -93,9 +94,84 @@ class PrivateViewsTests(TestCase):
 
 
 class SearchFormTests(TestCase):
+    def setUp(self) -> None:
+        self.user = get_user_model().objects.create_user(
+            username="test",
+            password="test123"
+        )
+        self.client.force_login(self.user)
+
     def test_search_driver_form_is_valid(self):
         form_data = {
             "username": "driver12"
         }
         form = DriverSearchForm(data=form_data)
         self.assertTrue(form.is_valid())
+
+    def test_search_driver_by_username(self):
+        self.driver1 = get_user_model().objects.create_user(
+            username="driver1",
+            password="test123",
+            license_number="ABC12345",
+        )
+        self.driver2 = get_user_model().objects.create_user(
+            username="driver2",
+            password="test123",
+            license_number="DEF67890",
+        )
+        response = self.client.get(
+            reverse("taxi:driver-list"),
+            {"username": "driver1"},
+        )
+
+        drivers = response.context.get("driver_list")
+
+        self.assertIn(self.driver1, drivers)
+        self.assertNotIn(self.driver2, drivers)
+
+    def test_search_car_by_model(self):
+        manufacturer = Manufacturer.objects.create(
+            name="BMW",
+            country="Germany",
+        )
+
+        self.car1 = Car.objects.create(
+            model="X5",
+            manufacturer=manufacturer,
+        )
+        self.car2 = Car.objects.create(
+            model="A4",
+            manufacturer=manufacturer,
+        )
+        response = self.client.get(
+            reverse("taxi:car-list"),
+            {"model": "X5"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        cars = response.context["car_list"]
+
+        self.assertIn(self.car1, cars)
+        self.assertNotIn(self.car2, cars)
+
+    def test_search_manufacturer_by_name(self):
+        self.manufacturer1 = Manufacturer.objects.create(
+            name="Audi",
+            country="Germany",
+        )
+        self.manufacturer2 = Manufacturer.objects.create(
+            name="Toyota",
+            country="Japan",
+        )
+        response = self.client.get(
+            reverse("taxi:manufacturer-list"),
+            {"name": "Audi"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        manufacturers = response.context["manufacturer_list"]
+
+        self.assertIn(self.manufacturer1, manufacturers)
+        self.assertNotIn(self.manufacturer2, manufacturers)
